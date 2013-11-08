@@ -2,13 +2,17 @@
 
 import RabbitAdapter
 import sys
+import os
 import time
 
 # Create the adapter
 sender = RabbitAdapter.SensorAdapter()
 
 # Connect to the stream manager
-sender.connectToExchange(os.environ['STREAMBOSS_RABBITMQ_HOST'], os.environ['STREAMBOSS_RABBITMQ_USER'], os.environ['STREAMBOSS_RABBITMQ_PASSWORD'])
+RMQHOST = os.environ.get('STREAMBOSS_RABBITMQ_HOST', 'localhost')
+RMQUSER = os.environ.get('STREAMBOSS_RABBITMQ_USER', 'guest')
+RMQPASS = os.environ.get('STREAMBOSS_RABBITMQ_PASS', 'guest')
+sender.connectToExchange(RMQHOST, RMQUSER, RMQPASS)
 
 print "Input 1 to create stream, 2 to reconnect: ",
 y = int(sys.stdin.readline())

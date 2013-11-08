@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import time
 import RabbitAdapter
@@ -8,7 +9,10 @@ import RabbitAdapter
 sender = RabbitAdapter.CloudAdapter()
 
 # Connect to the stream manager
-sender.connectToExchange(os.environ['STREAMBOSS_RABBITMQ_HOST'], os.environ['STREAMBOSS_RABBITMQ_USER'], os.environ['STREAMBOSS_RABBITMQ_PASSWORD'])
+RMQHOST = os.environ.get('STREAMBOSS_RABBITMQ_HOST', 'localhost')
+RMQUSER = os.environ.get('STREAMBOSS_RABBITMQ_USER', 'guest')
+RMQPASS = os.environ.get('STREAMBOSS_RABBITMQ_PASS', 'guest')
+sender.connectToExchange(RMQHOST, RMQUSER, RMQPASS)
 
 sender.streamSubscribe('barf')
 

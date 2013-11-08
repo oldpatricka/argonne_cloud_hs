@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 import MySQLdb as sql
 import pika
@@ -16,7 +17,7 @@ def keyval_get(chunk, key, defaultValue=""):
     return defaultValue
 
 
-RMQHOST = os.environ['STREAMBOSS_RABBITMQ_HOST']
+RMQHOST = os.environ.get('STREAMBOSS_RABBITMQ_HOST', 'localhost')
 
 E_STREAM_NAMETAKEN = -100;
 

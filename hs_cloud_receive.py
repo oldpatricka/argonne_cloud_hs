@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #Original Author: Nick Bond
 #Purpose: This script allows the user to connect to an S3 cloud storage source
 #   and then create a new bucket and key. After that the user is able to
@@ -8,7 +8,7 @@
 # Revised: Erik Keever
 # This forms the frontend of our hyperspectral upload system;
 # It immediately faces the uploader stream
-# 
+#
 # This currently uses a brain-damaged file uploader scheme to stuff entire 100MB
 # hyperspectral data files through the stream system. This is partly as a proof-
 # of concept for an eventually less-retarded backup.
@@ -16,20 +16,21 @@
 # The properly written stream source should attempt to connect to S3 itself and
 # just push the bucket/key over the stream system, only resorting to machine gunning
 # 1886 messages per hypercube through Rabbit if unable to reach S3.
-# 
+#
 # At any rate, this frontend will (one way or another, damnit!) get the hypercube
 # uploaded into S3, and emit [calkey, cubekey, panelkey, calx, caly, calR] messages
 # onto its stream
 
 import os
 
-import boto 
+import boto
 import sys
 import uuid
+import fileinput
 import boto.s3.connection
 from boto.s3.key import Key
 
-import RabbitAdapter
+#import RabbitAdapter
 import FileChunker
 import time
 import string
@@ -38,15 +39,25 @@ import string
 # This is the magic cribbed unaltered from Nick's bucket_getter.py code
 # I am lost if this doesn't work
 # Get an S3 connection
-access_key_id = os.environ['AWS_ACCESS_KEY_ID']
-secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+try:
+    access_key_id = os.environ['AWS_ACCESS_KEY_ID']
+    secret_access_key = os.environ['AWS_SECRET_ACCESS_KEY']
+except KeyError:
+    sys.exit("You must supply a AWS_ACCESS_KEY_ID and a AWS_SECRET_ACCESS_KEY")
 ##Connecting to cloud storage##
-conn=boto.s3.connection.S3Connection(aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key, #Connecting to Cumulus
-is_secure=False, port=8888, host='svc.uc.futuregrid.org',
-debug=0, https_connection_factory=None, calling_format = boto.s3.connection.OrdinaryCallingFormat())
+conn = boto.s3.connection.S3Connection(
+    aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key, #Connecting to Cumulus
+    is_secure=False, port=8888, host='svc.uc.futuregrid.org',
+    debug=0, https_connection_factory=None, calling_format = boto.s3.connection.OrdinaryCallingFormat())
+BUCKET_NAME = 'hs_test'
+
 
 # FIXME: This is hardcoded. That's probably bad...
-bukkit = conn.get_bucket('keever_test')
+try:
+    bukkit = conn.get_bucket(BUCKET_NAME)
+except boto.exception.S3ResponseError:
+    conn.create_bucket(BUCKET_NAME)
+    bukkit = conn.get_bucket(BUCKET_NAME)
 # So I'm naming things after elementary color-interacting particles it seems.
 kaon = Key(bukkit)
 
@@ -78,7 +89,7 @@ def cubestreamHandler(method, props, body):
 
     # Pass everything to the chunker; It will ignore things that aren't [CHUNKER ...]
     result = chunker.handleMsg(body)
-    
+
     # Returns -1 if not a file-transfer message,
     #          0 if transfer acted on,
     #          1 if transfer just finalized
@@ -108,7 +119,7 @@ def cubestreamHandler(method, props, body):
         else:
             print "Well, that was a wasted file receive... wonder what we got anyway lol"
         return
-    
+
     parts = string.split(body, ' ', 1)
     part1 = parts[0]
     print body
@@ -137,35 +148,42 @@ def cubestreamHandler(method, props, body):
 # Let's do this,
 # WRAAAAAAAAAAAAAAAAAAAGGGGGGGHHHHH!
 
-cloud = RabbitAdapter.CloudAdapter()
+#cloud = RabbitAdapter.CloudAdapter()
 # FIXME: No security here. That should be unbroked at some point.
-cloud.connectToExchange(os.environ['STREAMBOSS_RABBITMQ_HOST'], os.environ['STREAMBOSS_RABBITMQ_USER'], os.environ['STREAMBOSS_RABBITMQ_PASSWORD'])
+#cloud.connectToExchange(os.environ['STREAMBOSS_RABBITMQ_HOST'], os.environ['STREAMBOSS_RABBITMQ_USER'], os.environ['STREAMBOSS_RABBITMQ_PASSWORD'])
 
 #cloud.setRxCallback(cubestreamHandler)
-cloud.streamAnnounce('hyperspec_raw', 'hyperspec_cloudload')
-cloud.waitForPikaThread()
+#cloud.streamAnnounce('hyperspec_raw', 'hyperspec_cloudload')
+#cloud.waitForPikaThread()
 
-cloud.streamSubscribe('hyperspec_upload1')
+#cloud.streamSubscribe('hyperspec_upload1')
 
 # We have our callback set so there's nothing for this thread to do but wait for an exit signal...
-while True:
-    while len(cloud.receiveFifo) > 0:
-        x = cloud.receiveFifo.popleft()
+#while True:
+    #while len(cloud.receiveFifo) > 0:
+        #x = cloud.receiveFifo.popleft()
+        #cubestreamHandler(x[0], x[1], x[2])
+    #f0 = open('/root/checklife','r')
+    #g0 = f0.readline()
+    #f0.close()
+    #if g0[0] != "1":
+        #break
+    #time.sleep(.1)
+for line in fileinput.input():
+    x = line.split(" ")
+    try:
         cubestreamHandler(x[0], x[1], x[2])
-    f0 = open('/root/checklife','r')
-    g0 = f0.readline()
-    f0.close()
-    if g0[0] != "1":
-        break
-    time.sleep(.1)
+    except IndexError:
+        pass
+
 
 # Disconnect & kill everything
-cloud.streamUnsubscribe('hyperspec_upload1');
+#cloud.streamUnsubscribe('hyperspec_upload1');
 
-cloud.streamShutdown(0)
-cloud.waitForPikaThread()
+#cloud.streamShutdown(0)
+#cloud.waitForPikaThread()
 
-cloud.disconnectFromExchange()
+#cloud.disconnectFromExchange()
 
-quit()
+#quit()
 

@@ -193,12 +193,12 @@ def instream_disconnect(remote_key, action):
 
 
 # Better that this be hardcoded here than throughout the code
-DBHOST = os.environ['STREAMBOSS_DBHOST']
-DBUSER = os.environ['STREAMBOSS_DBUSER']
-DBPASS = os.environ['STREAMBOSS_DBPASS']
-DBDB = os.environ['STREAMBOSS_DBNAME']
+DBHOST = os.environ.get('STREAMBOSS_DBHOST', 'localhost')
+DBUSER = os.environ.get('STREAMBOSS_DBUSER', 'guest')
+DBPASS = os.environ.get('STREAMBOSS_DBPASS', 'guest')
+DBDB = os.environ.get('STREAMBOSS_DBNAME', 'streamboss')
 
-RMQHOST = os.environ['STREAMBOSS_RABBITMQ_HOST']
+RMQHOST = os.environ.get('STREAMBOSS_RABBITMQ_HOST', 'localhost')
 
 E_STREAM_NAMETAKEN = -100;
 
