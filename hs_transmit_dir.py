@@ -101,10 +101,10 @@ for N in range(0, len(cubelist)):
     y = string.split(cubelist[N],'_')
     cubetimes.append(time.mktime(time.strptime(y[3]+"_"+y[4], "%d-%m-%Y_%H.%M.%S.cube")))
 
-darkdates = []
+darktimes = []
 for N in range(0, len(darklist)):
     y = string.split(darklist[N],'_')
-    darktimes.append(time.mktime(time.strptime(y[3]+"_"+y[4], "%d-%m-%Y_%H.%M.%S.cube")))
+    darktimes.append(time.mktime(time.strptime(y[3]+"_"+y[4], "%d-%m-%Y_%H.%M.%S.dark")))
 
 ND = len(darklist)
 

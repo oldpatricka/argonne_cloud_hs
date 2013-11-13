@@ -49,7 +49,7 @@ conn = boto.s3.connection.S3Connection(
     aws_access_key_id=access_key_id, aws_secret_access_key=secret_access_key, #Connecting to Cumulus
     is_secure=False, port=8888, host='svc.uc.futuregrid.org',
     debug=0, https_connection_factory=None, calling_format = boto.s3.connection.OrdinaryCallingFormat())
-BUCKET_NAME = 'hs_test'
+BUCKET_NAME = 'hs_testx'
 
 
 # FIXME: This is hardcoded. That's probably bad...
@@ -80,7 +80,7 @@ def keyval_get(key, chunk):
             return y[1]
 
 # This will be our callback to handle incoming messages
-def cubestreamHandler(method, props, body):
+def cubestreamHandler(body):
     # I don't give a flaming shit any more, JUST WORK YOU FUGGING WRETCHED TURDBOMB
     global cubeSequenceKey
     global currentAction
@@ -99,10 +99,10 @@ def cubestreamHandler(method, props, body):
     # If the result is 1, we just finished receiving a file of some sort!
     # Horray! Use currentAction to determine what to do:
     if (result == 1):
-        print "Receive finished. Current action: ", currentAction
+        print >> sys.stderr, "Receive finished. Current action: ", currentAction
         if currentAction == 1:
             # store calibration panel profile
-	    print "storing cal profile"
+	    print >> sys.stderr,  "storing cal profile"
             kaon.key = "%s_calprofile" % (cubeSequenceKey, )
             kaon.set_contents_from_filename("calprof")
         elif currentAction == 2:
@@ -114,15 +114,18 @@ def cubestreamHandler(method, props, body):
             ycal = keyval_get("ycal", sequenceInfo)
             rcal = keyval_get("rcal", sequenceInfo)
             cubeTime = keyval_get("time", sequenceInfo)
-            print "Emitting CUBE_READY message."
-            cloud.sendStreamItem("CUBE_READY sequence=%s cubenumber=%i xcal=%s ycal=%s rcal=%s time=%s" % (cubeSequenceKey, cubesInSequence, xcal, ycal, rcal, cubeTime, ) )
+            print >> sys.stderr, "Emitting CUBE_READY message."
+            print "CUBE_READY sequence=%s cubenumber=%i xcal=%s ycal=%s rcal=%s time=%s" % (cubeSequenceKey, cubesInSequence, xcal, ycal, rcal, cubeTime, )
         else:
-            print "Well, that was a wasted file receive... wonder what we got anyway lol"
+            print >> sys.stderr, "Well, that was a wasted file receive... wonder what we got anyway lol"
         return
+
+    if result == -1:
+        print >> sys.stderr, "CTRL: '%s'" % body
 
     parts = string.split(body, ' ', 1)
     part1 = parts[0]
-    print body
+    #print body
     if (part1 == "SEQUENCE_START"):
         X = string.split(body, ' ')
         cubeSequenceKey = string.strip(X[1])
@@ -170,9 +173,10 @@ def cubestreamHandler(method, props, body):
         #break
     #time.sleep(.1)
 for line in fileinput.input():
+    #print >> sys.stderr, "Got: %s" % line
     x = line.split(" ")
     try:
-        cubestreamHandler(x[0], x[1], x[2])
+        cubestreamHandler(line)
     except IndexError:
         pass
 

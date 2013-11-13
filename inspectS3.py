@@ -9,6 +9,7 @@
 # execfile() this and you've got an open terminal to our S3 system
 
 import boto 
+import os 
 import sys
 import uuid
 import boto.s3.connection
@@ -31,8 +32,15 @@ is_secure=False, port=8888, host='svc.uc.futuregrid.org',
 debug=0, https_connection_factory=None, calling_format = boto.s3.connection.OrdinaryCallingFormat())
 
 # FIXME: This is hardcoded. That's probably bad...
-bukkit = conn.get_bucket('keever_test')
+bukkit = conn.get_bucket('hs_testx')
 # So I'm naming things after elementary color-interacting particles it seems.
-
 kaon = Key(bukkit)
 
+keys = bukkit.get_all_keys()
+
+for key in keys:
+    name = key.name
+    name = name.replace("_", ".")
+    print "Getting: %s" % name
+    #with open(name, "w") as f:
+        #key.get_contents_to_file(f)
