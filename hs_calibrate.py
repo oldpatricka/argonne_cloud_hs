@@ -154,7 +154,7 @@ def calibrationHandler(method, props, body):
 for line in fileinput.input():
     x = line.split(" ")
     try:
-        cubestreamHandler(x[0], x[1], x[2])
+        calibrationHandler(x[0], x[1], x[2])
     except IndexError:
         pass
 
