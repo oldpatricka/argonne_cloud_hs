@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #Original Author: Nick Bond
 #Purpose: This script allows the user to connect to an S3 cloud storage source
 #   and then create a new bucket and key. After that the user is able to
@@ -30,7 +30,8 @@ import boto.s3.connection
 from boto.s3.key import Key
 import pipes
 
-import RabbitAdapter
+import fileinput
+#import RabbitAdapter
 import time
 import string
 
@@ -46,7 +47,8 @@ is_secure=False, port=8888, host='svc.uc.futuregrid.org',
 debug=0, https_connection_factory=None, calling_format = boto.s3.connection.OrdinaryCallingFormat())
 
 # FIXME: This is hardcoded. That's probably bad...
-bukkit = conn.get_bucket('keever_test')
+bucket_name = os.environ.get('BUCKET', 'hs_test_')
+bukkit = conn.get_bucket(bucket_name)
 # So I'm naming things after elementary color-interacting particles it seems.
 kaon = Key(bukkit)
 
@@ -70,7 +72,7 @@ def keyval_get(key, chunk):
             return y[1]
 
 # This will be our callback to handle incoming messages
-def calibrationHandler(method, props, body):
+def calibrationHandler(body):
     # We look for messages in the form of
     # CUBE_READY sequence=8d152844af6e40db cubenumber=1 xcal=10 ycal=20 rcal=3 time=1376847057
 
@@ -83,9 +85,9 @@ def calibrationHandler(method, props, body):
         seqKey   = keyval_get("sequence", body)
         cubenum  = keyval_get("cubenumber", body)
         xcal     = keyval_get("xcal", body)
-	ycal     = keyval_get("yval", body)
-	rcal     = keyval_get("rcal", body)
-	cubetime = keyval_get("time", body)
+        ycal     = keyval_get("yval", body)
+        rcal     = keyval_get("rcal", body)
+        cubetime = keyval_get("time", body)
 
         # Download the HS data to local storage since hscal doesn't natively speak Cloud
         # These are stored in (key)_calprofile and (key)_rawcube_SequenceNumber
@@ -115,8 +117,11 @@ def calibrationHandler(method, props, body):
         # Okay images are coming out
         kaon.key = "%s_%s_eyetiff" % (seqKey, cubenum )
         kaon.set_contents_from_filename("thecube_rgb.tiff")
-        kaon.key = "%s_%s_ndviexr" % (seqKey, cubenum )
-        kaon.set_contents_from_filename("thecube_vegindex.exr");
+        try:
+            kaon.key = "%s_%s_ndviexr" % (seqKey, cubenum )
+            kaon.set_contents_from_filename("thecube_vegindex.exr");
+        except:
+            print >> sys.stderr, "No vegindex?"
        # Oy, this is a big one...
 #        kaon.key = "%s_%s_calibbed.nc" % (seqKey, cubenum, )
 #        kaon.set_contents_from_filename("cubeout.nc")
@@ -154,7 +159,7 @@ def calibrationHandler(method, props, body):
 for line in fileinput.input():
     x = line.split(" ")
     try:
-        calibrationHandler(x[0], x[1], x[2])
+        calibrationHandler(line)
     except IndexError:
         pass
 

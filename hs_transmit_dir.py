@@ -2,7 +2,7 @@
 
 import os
 import sys
-import RabbitAdapter
+#import RabbitAdapter
 import FileChunker   as FC
 import uuid
 import string
